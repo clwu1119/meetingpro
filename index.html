@@ -1,105 +1,302 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Drive 相簿</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Noto Sans TC', sans-serif; padding: 20px; text-align: center; background: #f0f2f5; }
-        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 10px; }
-        .btn-auth { background: #4285f4; color: white; }
-        .btn-upload { background: #34a853; color: white; display: none; }
-        #fileList { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 20px; }
-        .img-card { background: white; padding: 5px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .img-card img { width: 100%; border-radius: 5px; height: 120px; object-fit: cover; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Meeting Pro Premium</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <style>
+    :root {
+      --bg: #F2F2F7; --card: #FFFFFF; --ink: #000000; --muted: #8E8E93; --brand: #007AFF; --border: rgba(0,0,0,0.1);
+    }
+    body.dark {
+      --bg: #000000; --card: #1C1C1E; --ink: #FFFFFF; --muted: #8E8E93; --brand: #0A84FF; --border: rgba(255,255,255,0.1);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { 
+      margin: 0; background: var(--bg); color: var(--ink); 
+      font-family: -apple-system, system-ui, sans-serif; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      padding-bottom: 120px;
+    }
+
+    /* 頂部導航 - 蘋果極簡風 */
+    .nav-bar {
+      position: sticky; top: 0; z-index: 1000;
+      background: rgba(var(--bg), 0.7); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+      padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .container { padding: 0 16px; max-width: 650px; margin: auto; }
+
+    /* 歷史會議滑動選單 */
+    .history-scroller {
+      display: flex; gap: 12px; overflow-x: auto; padding: 10px 0 20px;
+      scrollbar-width: none;
+    }
+    .history-scroller::-webkit-scrollbar { display: none; }
+    .history-card {
+      min-width: 140px; background: var(--card); border-radius: 16px; padding: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border);
+      transition: 0.3s; flex-shrink: 0;
+    }
+    .history-card.active { border: 2px solid var(--brand); transform: scale(1.05); }
+    .history-card .date { font-size: 11px; color: var(--muted); }
+    .history-card .title { font-size: 13px; font-weight: 600; margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* 區塊樣式 */
+    .section-title { font-size: 20px; font-weight: 700; margin: 30px 0 15px 4px; letter-spacing: -0.5px; }
+    
+    .apple-group {
+      background: var(--card); border-radius: 20px; overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 25px;
+    }
+
+    .row-item {
+      display: flex; align-items: center; padding: 14px 20px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .row-item:last-child { border-bottom: none; }
+    .row-item label { width: 100px; font-size: 16px; font-weight: 400; }
+    .row-item input, .row-item select {
+      flex: 1; border: none; background: transparent; color: var(--brand);
+      font-size: 16px; outline: none; text-align: right;
+    }
+
+    /* 移除 textarea 拖拽 */
+    textarea {
+      width: 100%; border: none; background: transparent; color: var(--ink);
+      font-size: 16px; outline: none; resize: none; min-height: 150px;
+      padding: 16px 20px; line-height: 1.5;
+    }
+
+    /* 待辦事項卡片 */
+    .todo-item {
+      background: var(--card); border-radius: 18px; padding: 16px; margin-bottom: 12px;
+      border: 1px solid var(--border); transition: 0.2s;
+    }
+    .todo-item:active { background: var(--bg); }
+    .todo-top { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .todo-task { font-size: 17px; font-weight: 600; border: none; background: transparent; outline: none; width: 85%; color: var(--ink); }
+
+    /* 底部工具欄 */
+    .bottom-bar {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      width: 90%; max-width: 400px; height: 64px;
+      background: rgba(28, 28, 30, 0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-radius: 32px; display: flex; align-items: center; justify-content: space-around;
+      padding: 0 10px; z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .action-btn { color: white; display: flex; flex-direction: column; align-items: center; font-size: 10px; gap: 4px; text-decoration: none; opacity: 0.8; }
+    .action-btn i { font-size: 20px; }
+    .action-btn.main { background: var(--brand); width: 48px; height: 48px; border-radius: 24px; justify-content: center; opacity: 1; }
+  </style>
 </head>
 <body>
 
-    <h2>我的雲端相簿</h2>
-    
-    <button id="auth_btn" class="btn btn-auth" onclick="handleAuthClick()">登入 Google 帳號</button>
-    <button id="signout_btn" class="btn" style="display:none;" onclick="handleSignoutClick()">登出</button>
+  <nav class="nav-bar">
+    <div style="font-size: 24px; font-weight: 800; letter-spacing: -1px;">Meetings</div>
+    <i class="bi bi-person-circle" style="font-size: 24px; color: var(--muted);"></i>
+  </nav>
 
-    <hr>
+  <div class="container">
+    <div class="section-title">歷史紀錄</div>
+    <div class="history-scroller" id="historyList">
+      </div>
 
-    <div id="upload_section" style="display:none;">
-        <input type="file" id="fileInput" accept="image/*">
-        <button class="btn btn-upload" id="upload_btn" onclick="uploadFile()">開始上傳</button>
+    <div class="section-title">會議資訊</div>
+    <div class="apple-group">
+      <div class="row-item">
+        <label>主題</label>
+        <input type="text" id="m-subject" placeholder="必填">
+      </div>
+      <div class="row-item">
+        <label>日期</label>
+        <input type="date" id="m-date">
+      </div>
+      <div class="row-item">
+        <label>地點</label>
+        <input type="text" id="m-loc" placeholder="地點或連結">
+      </div>
     </div>
 
-    <div id="fileList"></div>
+    <div class="section-title">討論決議</div>
+    <div class="apple-group">
+      <textarea id="m-notes" placeholder="開始紀錄討論重點..."></textarea>
+    </div>
 
-    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+    <div class="section-title">待辦任務</div>
+    <div id="todo-list"></div>
+    
+    <div style="height: 50px;"></div>
+    <button onclick="deleteCurrentMeeting()" style="width:100%; border:none; background:transparent; color:#FF3B30; font-size:14px; margin-bottom: 20px;">刪除此會議紀錄</button>
+  </div>
 
-    <script>
-        /* --- 設定區 --- */
-        const CLIENT_ID = '你的CLIENT_ID.apps.googleusercontent.com'; // 填入你的 Client ID
-        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+  <div class="bottom-bar">
+    <div class="action-btn" onclick="exportToCSV()">
+      <i class="bi bi-share"></i>
+      <span>導出</span>
+    </div>
+    <div class="action-btn main" onclick="createNewMeeting()">
+      <i class="bi bi-plus-lg"></i>
+    </div>
+    <div class="action-btn" onclick="document.body.classList.toggle('dark')">
+      <i class="bi bi-moon-stars"></i>
+      <span>主題</span>
+    </div>
+  </div>
 
-        let tokenClient;
-        let accessToken = null;
+<script>
+  let meetings = JSON.parse(localStorage.getItem('meeting_db')) || [];
+  let currentIndex = meetings.length > 0 ? meetings.length - 1 : -1;
 
-        // 1. 初始化 API
-        function gapiLoaded() { gapi.load('client', () => gapi.client.init({})); }
-        function gisLoaded() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: (tokenResponse) => {
-                    accessToken = tokenResponse.access_token;
-                    document.getElementById('auth_btn').innerText = '已授權';
-                    document.getElementById('upload_section').style.display = 'block';
-                    document.getElementById('signout_btn').style.display = 'inline-block';
-                    listImages(); // 登入後抓取圖片
-                },
-            });
-        }
+  // 初始化：如果沒會議就開一個新的
+  if (currentIndex === -1) createNewMeeting();
 
-        function handleAuthClick() { tokenClient.requestAccessToken(); }
-        function handleSignoutClick() {
-            google.accounts.oauth2.revokeToken(accessToken);
-            location.reload();
-        }
+  function createNewMeeting() {
+    const newMeet = {
+      id: Date.now(),
+      subject: '新會議',
+      date: new Date().toISOString().split('T')[0],
+      loc: '',
+      notes: '',
+      todos: []
+    };
+    meetings.push(newMeet);
+    currentIndex = meetings.length - 1;
+    saveAndRender();
+  }
 
-        // 2. 上傳檔案邏輯
-        async function uploadFile() {
-            const file = document.getElementById('fileInput').files[0];
-            if (!file) return alert('請先選擇檔案');
+  function saveAndRender() {
+    // 獲取當前畫面數據存入陣列
+    if (currentIndex !== -1) {
+      meetings[currentIndex].subject = document.getElementById('m-subject').value;
+      meetings[currentIndex].date = document.getElementById('m-date').value;
+      meetings[currentIndex].loc = document.getElementById('m-loc').value;
+      meetings[currentIndex].notes = document.getElementById('m-notes').value;
+    }
+    
+    localStorage.setItem('meeting_db', JSON.stringify(meetings));
+    renderHistory();
+    renderTodos();
+  }
 
-            const metadata = { 'name': file.name, 'mimeType': file.type };
-            const form = new FormData();
-            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-            form.append('file', file);
+  function renderHistory() {
+    const list = document.getElementById('historyList');
+    list.innerHTML = '';
+    meetings.forEach((m, idx) => {
+      const card = document.createElement('div');
+      card.className = `history-card ${idx === currentIndex ? 'active' : ''}`;
+      card.onclick = () => switchMeeting(idx);
+      card.innerHTML = `
+        <div class="date">${m.date}</div>
+        <div class="title">${m.subject || '無標題'}</div>
+      `;
+      list.appendChild(card);
+    });
+  }
 
-            fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                method: 'POST',
-                headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
-                body: form
-            }).then(response => {
-                alert('上傳成功！');
-                listImages(); // 刷新清單
-            });
-        }
+  function switchMeeting(idx) {
+    saveAndRender(); // 先存目前的
+    currentIndex = idx;
+    const m = meetings[idx];
+    document.getElementById('m-subject').value = m.subject;
+    document.getElementById('m-date').value = m.date;
+    document.getElementById('m-loc').value = m.loc;
+    document.getElementById('m-notes').value = m.notes;
+    renderTodos();
+    renderHistory();
+  }
 
-        // 3. 列出雲端硬碟中的圖片 (僅限此 App 上傳的)
-        async function listImages() {
-            const response = await fetch('https://www.googleapis.com/drive/v3/files?q=mimeType contains "image/"&fields=files(id, name, thumbnailLink)', {
-                headers: new Headers({ 'Authorization': 'Bearer ' + accessToken })
-            });
-            const data = await response.json();
-            const container = document.getElementById('fileList');
-            container.innerHTML = '';
-            
-            data.files.forEach(file => {
-                const div = document.createElement('div');
-                div.className = 'img-card';
-                div.innerHTML = `<img src="${file.thumbnailLink.replace('=s220', '=s500')}" alt="${file.name}"><p>${file.name}</p>`;
-                container.appendChild(div);
-            });
-        }
-    </script>
+  function renderTodos() {
+    const container = document.getElementById('todo-list');
+    container.innerHTML = '';
+    const m = meetings[currentIndex];
+    m.todos.forEach((t, tIdx) => {
+      const div = document.createElement('div');
+      div.className = 'todo-item';
+      div.innerHTML = `
+        <div class="todo-top">
+          <input type="text" class="todo-task" value="${t.task}" placeholder="任務內容..." oninput="updateTodo(${tIdx}, 'task', this.value)">
+          <i class="bi bi-dash-circle" style="color:#FF3B30" onclick="removeTodo(${tIdx})"></i>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center">
+          <input type="text" value="${t.owner}" placeholder="負責人" oninput="updateTodo(${tIdx}, 'owner', this.value)" style="border:none; background:transparent; font-size:13px; color:var(--muted); outline:none;">
+          <select onchange="updateTodo(${tIdx}, 'status', this.value)" style="border:none; background:transparent; color:var(--brand); font-size:13px; font-weight:600;">
+            <option value="pending" ${t.status==='pending'?'selected':''}>進行中</option>
+            <option value="done" ${t.status==='done'?'selected':''}>完成</option>
+          </select>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+    
+    // 新增任務按鈕
+    const addBtn = document.createElement('div');
+    addBtn.className = 'todo-item';
+    addBtn.style.textAlign = 'center';
+    addBtn.style.border = '1px dashed var(--brand)';
+    addBtn.style.color = 'var(--brand)';
+    addBtn.innerHTML = '<i class="bi bi-plus-circle"></i> 新增待辦任務';
+    addBtn.onclick = () => {
+      meetings[currentIndex].todos.push({task:'', owner:'', status:'pending'});
+      saveAndRender();
+    };
+    container.appendChild(addBtn);
+  }
+
+  function updateTodo(tIdx, field, val) {
+    meetings[currentIndex].todos[tIdx][field] = val;
+    localStorage.setItem('meeting_db', JSON.stringify(meetings));
+  }
+
+  function removeTodo(tIdx) {
+    meetings[currentIndex].todos.splice(tIdx, 1);
+    saveAndRender();
+  }
+
+  function deleteCurrentMeeting() {
+    if(confirm("確定刪除此會議？")) {
+      meetings.splice(currentIndex, 1);
+      currentIndex = meetings.length - 1;
+      if(currentIndex === -1) createNewMeeting();
+      else switchMeeting(currentIndex);
+    }
+  }
+
+  function exportToCSV() {
+    const m = meetings[currentIndex];
+    let csv = "\uFEFF主題,日期,地點\n";
+    csv += `${m.subject},${m.date},${m.loc}\n\n討論重點\n${m.notes}\n\n任務,負責人,狀態\n`;
+    m.todos.forEach(t => csv += `${t.task},${t.owner},${t.status}\n`);
+    const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Meeting_${m.subject}.csv`;
+    link.click();
+  }
+
+  // 自動存檔監聽
+  document.querySelectorAll('input, textarea').forEach(el => {
+    el.addEventListener('input', () => {
+      meetings[currentIndex].subject = document.getElementById('m-subject').value;
+      meetings[currentIndex].date = document.getElementById('m-date').value;
+      meetings[currentIndex].loc = document.getElementById('m-loc').value;
+      meetings[currentIndex].notes = document.getElementById('m-notes').value;
+      localStorage.setItem('meeting_db', JSON.stringify(meetings));
+      renderHistory(); // 更新歷史清單的標題
+    });
+  });
+
+  window.onload = () => {
+    const m = meetings[currentIndex];
+    document.getElementById('m-subject').value = m.subject;
+    document.getElementById('m-date').value = m.date;
+    document.getElementById('m-loc').value = m.loc;
+    document.getElementById('m-notes').value = m.notes;
+    renderHistory();
+    renderTodos();
+  };
+</script>
 </body>
 </html>
